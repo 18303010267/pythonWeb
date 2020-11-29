@@ -98,6 +98,11 @@ def edit_project(request):
 
 @require_http_methods(["GET"])
 def show_projects(request):
+    """
+       展示项目
+       :param request:
+       :return: 成功返回creat ok
+       """
     response = {}
     try:
 
@@ -132,3 +137,105 @@ def del_projects(request):
             response['error_num'] = 1
         return JsonResponse(response)
 
+@require_http_methods(["GET"])
+def show_FuncSuite(request):
+    """
+       展示模块
+       :param request:
+       :return: 成功返回creat ok
+       """
+    list_suite = []
+    response = {}
+    try:
+
+        name = request.GET.get('name')
+        if len(name.strip()) == 0:
+            suites = TestSuite.objects.filter().values('suite_id','name','project_id__project_id','project_id__name')
+           # suites = TestSuite.objects.filter()
+        else:
+            suites = TestSuite.objects.filter(name__contains=name.strip()).values('suite_id','name','project_id__project_id','project_id__name')
+            # suites = TestSuite.objects.filter()
+        for suite in suites:
+            item = {}
+            item['name'] = suite['name']
+            item['suite_id'] = suite['suite_id']
+            item['project_id__project_id'] = suite['project_id__project_id']
+            item['project_id__name'] = suite['project_id__name']
+            list_suite.append(item)
+        response['list'] = list_suite
+        response['msg'] = 'success'
+        response['error_num'] = 0
+    except  Exception as e:
+        response['msg'] = str(e)
+        response['error_num'] = 1
+    return JsonResponse(response)
+
+
+@csrf_exempt
+def add_suite(request):
+    """
+    增加一个模块
+    :param request:
+    :return: 成功返回creat ok
+    """
+    if request.method == 'POST':
+        response = {}
+        project_id = request.POST['pk']
+        name = request.POST['name']
+
+        try:
+            with transaction.atomic():
+                TestSuite.objects.create(name=name, project_id_id=project_id)
+                response['msg'] = 'success'
+                response['error_num'] = 0
+        except Exception as e:
+            print (e)
+            response['msg'] = str(e)
+            response['error_num'] = 1
+        return JsonResponse(response)
+
+
+
+@csrf_exempt
+def edit_suite(request):
+    """
+    修改一个模块
+    :param request:
+    :return: 成功返回creat ok
+    """
+    if request.method == 'POST':
+        response = {}
+        suite_id = request.POST['suite_id']
+        project_id = request.POST['project_id']
+        name = request.POST['name']
+
+        try:
+            with transaction.atomic():
+                tp = TestSuite.objects.get(suite_id=suite_id)
+                tp.project_id_id = project_id
+                tp.name = name
+                tp.save()
+                response['msg'] = 'success'
+                response['error_num'] = 0
+        except Exception as e:
+            print(e)
+            response['msg'] = str(e)
+            response['error_num'] = 1
+        return JsonResponse(response)
+
+
+@csrf_exempt
+def del_suite(request):
+    if request.method == 'GET':
+        response = {}
+        try:
+
+            suite_id = request.GET.get('suite_id')
+            if suite_id!= None :
+                TestSuite.objects.get(suite_id=suite_id).delete()
+                response['msg'] = 'success'
+                response['error_num'] = 0
+        except  Exception as e:
+            response['msg'] = str(e)
+            response['error_num'] = 1
+        return JsonResponse(response)
